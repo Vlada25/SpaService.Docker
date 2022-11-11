@@ -1,0 +1,208 @@
+version: '3.4'
+
+services:
+  gateway:
+    hostname: gateway
+    build:
+      context: .
+      dockerfile: SpaService.Gateway/Gateway.API/Dockerfile
+    ports:
+      - 8000:80
+      - 8001:443
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    links:
+      - persons_manager
+      - orders_manager
+      - logging_manager
+      - photos_manager
+      - services_manager
+      - authentication_manager
+    depends_on:
+      - persons_manager
+      - orders_manager
+      - logging_manager
+      - photos_manager
+      - services_manager
+      - authentication_manager
+  
+  persons_manager:
+    hostname: persons_manager
+    build:
+      context: .
+      dockerfile: SpaService.PersonsManager/PersonsManager.API/Dockerfile
+    ports:
+      - 8010:80
+      - 8011:443
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      - rabbitmq
+      - sql_server_persons
+
+  orders_manager:
+    hostname: orders_manager
+    build:
+      context: .
+      dockerfile: SpaService.OrdersManager/OrdersManager.API/Dockerfile
+    ports:
+      - 8020:80
+      - 8021:443
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      - rabbitmq
+      - postgres
+
+  logging_manager:
+    hostname: logging_manager
+    build:
+      context: .
+      dockerfile: SpaService.LoggingManager/LoggingManager.API/Dockerfile
+    ports:
+      - 8030:80
+      - 8031:443
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      - rabbitmq
+      - mongo
+
+  photos_manager:
+    hostname: photos_manager
+    build:
+      context: .
+      dockerfile: SpaService.PhotosManager/PhotosManager.API/Dockerfile
+    ports:
+      - 8040:80
+      - 8041:443
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      - rabbitmq
+      - sql_server_photos
+
+  services_manager:
+    hostname: services_manager
+    build:
+      context: .
+      dockerfile: SpaService.ServicesManager/ServicesManager.API/Dockerfile
+    ports:
+      - 8050:80
+      - 8051:443
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      - rabbitmq
+      - sql_server_services
+
+  authentication_manager:
+    hostname: authentication_manager
+    build:
+      context: .
+      dockerfile: SpaService.AuthenticationManager/AuthenticationManager.API/Dockerfile
+    ports:
+      - 8060:80
+      - 8061:443
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    depends_on:
+      - rabbitmq
+      - sql_server_authentication
+
+  rabbitmq:
+    image: rabbitmq:3.9-management
+    container_name: rabbitmq
+    ports:
+      - 5672:5672
+      - 15672:15672
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+
+  sql_server_persons:
+    image: "mcr.microsoft.com/mssql/server:2019-latest"
+    ports:
+      - 1401:1433
+    environment:
+      SA_PASSWORD: "Your_password123"
+      ACCEPT_EULA: "Y"
+    user: root
+    volumes:
+      - db_persons:/var/opt/mssql/data
+
+  sql_server_photos:
+    image: "mcr.microsoft.com/mssql/server:2019-latest"
+    ports:
+      - 1402:1433
+    environment:
+      SA_PASSWORD: "Your_password123"
+      ACCEPT_EULA: "Y"
+    user: root
+    volumes:
+      - db_photos:/var/opt/mssql/data
+
+  sql_server_services:
+    image: "mcr.microsoft.com/mssql/server:2019-latest"
+    ports:
+      - 1403:1433
+    environment:
+      SA_PASSWORD: "Your_password123"
+      ACCEPT_EULA: "Y"
+    user: root
+    volumes:
+      - db_services:/var/opt/mssql/data
+
+  sql_server_authentication:
+    image: "mcr.microsoft.com/mssql/server:2019-latest"
+    ports:
+      - 1404:1433
+    environment:
+      SA_PASSWORD: "Your_password123"
+      ACCEPT_EULA: "Y"
+    user: root
+    volumes:
+      - db_authentication:/var/opt/mssql/data
+
+  postgres:
+    image: postgres
+    container_name: local_pgdb
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1111
+    ports:
+      - 5432:5432
+    user: root
+    volumes:
+      - db_orders:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: user@user.com
+      PGADMIN_DEFAULT_PASSWORD: 1111
+    user: root
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
+  mongo:
+    image: mongo
+    restart: always
+    container_name: mongodb
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo:/data/db
+
+volumes:
+  db_persons:
+  db_orders:
+  pgadmin-data:
+  mongo:
+  db_photos:
+  db_services:
+  db_authentication:
